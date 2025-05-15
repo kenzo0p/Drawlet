@@ -17,7 +17,7 @@ export const middleware = async(req  :Request  ,res : Response , next : NextFunc
     if (!authHeader || !authHeader.startsWith("Bearer")) {
       return res.status(403).json({ error: "Token expired or missing" });
     }
-    const token = authHeader.split(' ')[1] ?? "";
+    const token = authHeader.split(' ')[1] ?? "";  
     const decodedToken = jwt.verify(token,JWT_SECRET!) as { userId?: string };
     if (!decodedToken.userId) {
       return res.status(403).json({ error: "Token expired or unauthenticated" });
