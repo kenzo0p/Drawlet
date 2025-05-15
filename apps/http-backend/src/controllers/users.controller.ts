@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { CreateUser, SigninSchema } from "@repo/common/types";
+import { CreateUser, SigninSchema , CreateRoomSchema } from "@repo/common/types";
 import bcrypt from "bcrypt";
 import { prismaClient } from "@repo/database/client";
 import { JWT_SECRET } from "@repo/backend-common/config";
-export const signup = async (req: Request, res: Response) => {
+export const signup = async (req: Request, res: Response): Promise<any> => {
   try {
     const { success, data } = CreateUser.safeParse(req.body);
     if (!success) {
@@ -27,19 +27,19 @@ export const signup = async (req: Request, res: Response) => {
         name,
       },
     });
-
-    const token = jwt.sign(newUser.id , JWT_SECRET)
+    const userId = newUser.id;
+    const token = jwt.sign({ userId }, JWT_SECRET);
 
     if (!newUser) {
       return res.status(403).json("Try again something went wrong");
     }
 
-    return res.status(201).json({newUser , token});
+    return res.status(201).json({ newUser, token });
   } catch (error) {
     return res.status(500).json("Internal server error");
   }
 };
-export const signin = async (req: Request, res: Response) => {
+export const signin = async (req: Request, res: Response): Promise<any> => {
   try {
     const { success, data } = SigninSchema.safeParse(req.body);
     if (!success) {
@@ -47,7 +47,7 @@ export const signin = async (req: Request, res: Response) => {
     }
 
     const username = data.username;
-    const password = data.passoword;
+    const password = data.password;
 
     const user = await prismaClient.user.findFirst({ where: { username } });
     if (!user) {
@@ -56,19 +56,43 @@ export const signin = async (req: Request, res: Response) => {
         .json("User not found with this username please create the account");
     }
 
-    const isPassword = await bcrypt.compare(user.password, password);
+    const isPassword = await bcrypt.compare(password, user.password);
     if (!isPassword) {
       return res.status(400).json("Password is incorrect");
     }
-    const token = jwt.sign(user.id , JWT_SECRET)
-    return res.status(200).json(user);
+    const userId = user.id;
+    const token = jwt.sign({ userId }, JWT_SECRET);
+    return res.status(200).json(token);
   } catch (error) {
     return res.status(500).json("Internal server error");
   }
 };
-export const createRoom = async (req: Request, res: Response) => {
+export const createRoom = async (req: Request, res: Response): Promise<any> => {
   try {
+    const { success, data } = CreateRoomSchema.safeParse(req.body);
+
+    if (!success) {
+      return res.status(400).json({ error: "Invalid input" });
+    }
+
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthenticated user" });
+    }
+
+    const newRoom = await prismaClient.room.create({
+      data: {
+        slug: data.slug,
+        adminId: userId,
+      },
+    });
+
+    return res.status(201).json(newRoom);
   } catch (error) {
-    return res.status(500).json("Internal server error");
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+

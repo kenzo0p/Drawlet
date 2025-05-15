@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-export const middleware = (req  :Request  ,res : Response , next : NextFunction) => {
+export const middleware = async(req  :Request  ,res : Response , next : NextFunction)  :Promise<any> => {
    try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer")) {
