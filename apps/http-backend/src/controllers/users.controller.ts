@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { CreateUser, SigninSchema , CreateRoomSchema } from "@repo/common/types";
+import { CreateUser, SigninSchema, CreateRoomSchema } from "@repo/common/types";
 import bcrypt from "bcrypt";
 import { prismaClient } from "@repo/database/client";
 import { JWT_SECRET } from "@repo/backend-common/config";
@@ -88,11 +88,33 @@ export const createRoom = async (req: Request, res: Response): Promise<any> => {
       },
     });
 
-    return res.status(201).json(newRoom);
+    return res.status(201).json(newRoom.id);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
 
+export const getAllRoomChats = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const roomId = Number(req.params.roomId);
+    const messages = prismaClient.chat.findMany({
+      where: {
+        roomId: roomId,
+      },
+      orderBy: {
+        id: "desc",
+      },
+      take: 50,
+    });
 
+    return res.status(200).json({ messages });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Integer server error", error: error });
+  }
+};

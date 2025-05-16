@@ -1,7 +1,8 @@
 import { WebSocket, WebSocketServer } from "ws";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 const wss = new WebSocketServer({ port: 8000 });
+import { prismaClient } from "@repo/database/client";
 
 interface User {
   ws: WebSocket;
@@ -11,19 +12,19 @@ interface User {
 const users: User[] = []; //
 
 function checkUser(token: string): string | null {
- try {
-   const decodedToken = jwt.verify(token, JWT_SECRET);
-   if (typeof decodedToken === "string") {
-     return null;
-   }
-   if (!decodedToken.userId || !decodedToken) {
-     return null;
-   }
-   return decodedToken.userId;
- } catch (error) {
-  console.error(error);
-  return null;
- }
+  try {
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    if (typeof decodedToken === "string") {
+      return null;
+    }
+    if (!decodedToken.userId || !decodedToken) {
+      return null;
+    }
+    return decodedToken.userId;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 }
 
 wss.on("connection", function connection(ws, request) {
@@ -46,7 +47,7 @@ wss.on("connection", function connection(ws, request) {
     ws,
   });
 
-  ws.on("message", function message(data) {
+  ws.on("message", async function message(data) {
     const parsedData = JSON.parse(data as unknown as string); //{type : "Join room" ,rooom id : "1"}
     if (parsedData.type === "join_room") {
       const user = users.find((x) => x.ws === ws);
@@ -62,20 +63,26 @@ wss.on("connection", function connection(ws, request) {
     if (parsedData.type === "chat") {
       const roomId = parsedData.roomId;
       const message = parsedData.message;
-
+      
+      await prismaClient.chat.create({
+        data: {
+          roomId,
+          message,
+          userId,
+        },
+      });
       users.forEach((user) => {
         if (user.rooms.includes(roomId)) {
-          [
-            user.ws.send(
-              JSON.stringify({
-                type: "chat",
-                message: message,
-                roomId,
-              })
-            ),
-          ];
+          user.ws.send(
+            JSON.stringify({
+              type: "chat",
+              message: message,
+              roomId,
+            })
+          );
         }
       });
+
     }
   });
 });
