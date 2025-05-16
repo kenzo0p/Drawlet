@@ -118,3 +118,22 @@ export const getAllRoomChats = async (
       .json({ message: "Integer server error", error: error });
   }
 };
+export const getRoom = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const slug = req.params.slug;
+    const room = prismaClient.room.findFirst({
+      where: {
+        slug
+      }
+    });
+
+    return res.status(200).json({ room });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Integer server error", error: error });
+  }
+};
