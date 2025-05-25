@@ -7,7 +7,7 @@ const userRouter : Router = Router();
 userRouter.route("/signup").post(signup)
 userRouter.route("/signin").post(signin)
 userRouter.route("/room").post(middleware , createRoom)
-userRouter.route("/chats/:roomId").get(middleware , getAllRoomChats)
+userRouter.route("/chats/:roomId").get( getAllRoomChats)
 userRouter.route("/room/:slug").get(middleware , getRoom)
 
 export default userRouter;

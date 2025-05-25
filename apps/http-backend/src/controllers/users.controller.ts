@@ -62,7 +62,7 @@ export const signin = async (req: Request, res: Response): Promise<any> => {
     }
     const userId = user.id;
     const token = jwt.sign({ userId }, JWT_SECRET);
-    return res.status(200).json(token);
+    return res.status(200).json({token});
   } catch (error) {
     return res.status(500).json("Internal server error");
   }
@@ -88,7 +88,7 @@ export const createRoom = async (req: Request, res: Response): Promise<any> => {
       },
     });
 
-    return res.status(201).json(newRoom.id);
+    return res.status(201).json({roomId :newRoom.id});
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error" });
@@ -101,7 +101,8 @@ export const getAllRoomChats = async (
 ): Promise<any> => {
   try {
     const roomId = Number(req.params.roomId);
-    const messages = prismaClient.chat.findMany({
+    console.log("Fetching chats for room:", roomId); // Debug log
+    const messages = await prismaClient.chat.findMany({
       where: {
         roomId: roomId,
       },
@@ -110,12 +111,12 @@ export const getAllRoomChats = async (
       },
       take: 50,
     });
-
-    return res.status(200).json({ messages });
+    console.log("Found chats:", messages); // Debug log
+    return res.status(200).json({ messages : messages  });
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "Integer server error", error: error });
+      .json({ message : [], error: error });
   }
 };
 export const getRoom = async (
